@@ -10,8 +10,9 @@ import re
 
 # ------------------ PATHS (EDIT AS NEEDED) ------------------
 MODEL_SAVE_DIR = "/content/drive/MyDrive/datasets_religion/religion_care_outputs/mistral_bpr_model"
-PROMPTS_FILE = "/content/drive/MyDrive/datasets_religion/bpr_eval_prompts_final_700g1_700g2_modelproof.json"
-SAVE_DIR = "/content/drive/MyDrive/datasets_religion/religion_care_outputs_new"
+# PROMPTS_FILE = "/content/drive/MyDrive/datasets_religion/bpr_eval_prompts_final_700g1_700g2_modelproof.json"
+PROMPTS_FILE ="/content/drive/MyDrive/datasets_religion/bpr_eval_prompts_final_with_slangs1.json"
+SAVE_DIR = "/content/drive/MyDrive/datasets_religion/religion_care_outputs_latest"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 # drive.mount('/content/drive')
@@ -20,7 +21,7 @@ os.makedirs(SAVE_DIR, exist_ok=True)
 with open(PROMPTS_FILE, "r") as f:
     prompts = json.load(f)
 
-# prompts=prompts[:30]
+
 # ------------------ 3. LOAD LOCAL MODEL ------------------
 USE_GPU = torch.cuda.is_available()
 tokenizer = AutoTokenizer.from_pretrained(MODEL_SAVE_DIR)
@@ -41,11 +42,22 @@ text_generator = pipeline(
     temperature=0.0,
 )
 
+def strip_prompt_from_response(prompt, response):
+    """
+    Removes the prompt text from the beginning of the response if present.
+    """
+    prompt_clean = prompt.strip()
+    response_clean = response.strip()
+    if response_clean.startswith(prompt_clean):
+        return response_clean[len(prompt_clean):].strip()
+    return response_clean
+
 # ------------------ 4. GENERATE MODEL OUTPUTS ------------------
 model_outputs = []
 for item in tqdm(prompts, desc="Running model on prompts"):
     response = text_generator(item["prompt"])[0]["generated_text"].strip()
-    model_outputs.append({"id": item["id"], "response": response})
+    response_pure = strip_prompt_from_response(item["prompt"], response)
+    model_outputs.append({"id": item["id"], "response": response_pure})
 with open(os.path.join(SAVE_DIR, "model_outputs.json"), "w") as f:
     json.dump(model_outputs, f, indent=2)
 
@@ -91,9 +103,11 @@ outputs_log = []
 for item in prompts:
     rid = item["id"]
     response_text = response_dict.get(rid, "")
-    biased = item["positive_word"]
-    anti = item["negative_word"]
+    biased = item["negative_word"]
+    anti = item["positive_word"]
     chosen = extract_chosen_word_regex(response_text, biased, anti)
+    # print('biased',biased)
+    # print('anti',anti)
     outputs_log.append({
         "id": rid,
         "identity": item["identity"],

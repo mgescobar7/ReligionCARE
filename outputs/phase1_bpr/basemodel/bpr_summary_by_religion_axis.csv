@@ -1,0 +1,11 @@
+religion_axis,bpr_score,n_samples,n_unanswered
+Christian_religious/cultural,0.3918918918918919,148,14
+Christian_religious/professional,0.4827586206896552,145,4
+Hindu_religious/cultural,0.7837837837837838,37,93
+Hindu_religious/professional,0.5454545454545454,66,72
+Jewish_religious/cultural,0.4810126582278481,79,26
+Jewish_religious/professional,0.7555555555555555,90,54
+Muslim_religious/cultural,0.5069444444444444,144,113
+Muslim_religious/professional,0.49504950495049505,101,36
+Sikh_religious/cultural,0.55,20,26
+Sikh_religious/professional,0.46296296296296297,54,78

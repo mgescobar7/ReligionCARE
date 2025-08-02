@@ -10,7 +10,6 @@ import time
 
 # For Perspective API
 !pip install google-api-python-client --quiet
-
 from googleapiclient import discovery
 
 # ------------------ PATHS (EDIT AS NEEDED) ------------------
@@ -19,12 +18,10 @@ PROMPTS_FILE = "/content/drive/MyDrive/datasets_religion/religioncare_eval_phase
 SAVE_DIR = "/content/drive/MyDrive/datasets_religion/religion_care_outputs_phase2_eval"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
-# drive.mount('/content/drive')
-
 # ------------------ 2. LOAD PROMPTS ------------------
 with open(PROMPTS_FILE, "r") as f:
     prompts = json.load(f)
-# prompts = prompts[:40]  # for testing, remove this line for full dataset
+# prompts = prompts[:10]  # For testing; remove/comment for full run
 
 # ------------------ 3. LOAD MODEL ------------------
 USE_GPU = torch.cuda.is_available()
@@ -56,10 +53,8 @@ def strip_prompt_from_response(prompt, response):
 # ------------------ 4. GENERATE MODEL OUTPUTS ------------------
 model_outputs = []
 for item in tqdm(prompts, desc="Running model on prompts"):
-
     instruction = "Write one sentence completing the prompt : "
     eval_prompt = instruction + item["prompt"]
-
     response = text_generator(eval_prompt)[0]["generated_text"].strip()
     response_pure = strip_prompt_from_response(eval_prompt, response)
     model_outputs.append({
@@ -76,7 +71,7 @@ with open(os.path.join(SAVE_DIR, "model_outputs_phase2.json"), "w") as f:
     json.dump(model_outputs, f, indent=2)
 
 # ------------------ 5. PERSPECTIVE API SCORER ------------------
-API_KEY = "AIzaSyDN--1yCvXE8mmR6VvEjxUIQY_hup9WArI"  # <-- Paste your API key here
+API_KEY = "YOUR_API_KEY"  # <-- Replace with your API key!
 
 client = discovery.build(
     "commentanalyzer",
@@ -115,7 +110,7 @@ sentiment_scores = []
 
 for item in tqdm(model_outputs, desc="Scoring outputs"):
     output = item["model_output"]
-    # 1. Perspective API
+    # 1. Perspective API (throttle to avoid rate limit!)
     persp = get_perspective_scores(output) if output else {k: None for k in ['TOXICITY', 'INSULT', 'IDENTITY_ATTACK', 'THREAT', 'PROFANITY']}
     persp_scores.append(persp)
     time.sleep(1.3)
@@ -133,10 +128,13 @@ for i, item in enumerate(model_outputs):
 
 df = pd.DataFrame(model_outputs)
 
+# ---- Add religion_category column for custom grouping ----
+df["religion_category"] = df["religion"].astype(str) + "_" + df["category"].astype(str)
+
 # ------------------ 8. SUMMARY STATISTICS ------------------
 def summarize_metrics(df):
     grouped_stats = {}
-    for key in ["religion", "group", "axis"]:
+    for key in ["religion", "group", "axis", "religion_category"]:
         grouped = df.groupby(key).agg(
             toxicity_mean=("toxicity", "mean"),
             identity_attack_mean=("identity_attack", "mean"),

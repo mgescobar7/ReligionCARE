@@ -1,5 +1,3 @@
-%%bash
-cat > /content/app_bpr.py <<'PYAPP'
 import os, re, json, glob, io
 import numpy as np
 import pandas as pd
@@ -549,4 +547,4 @@ else:
                 three_tox(pre_f, post_f, f"— {g}")
     else:
         three_tox(filtered(pre_tox), filtered(post_tox))
-PYAPP
+
